@@ -40,6 +40,12 @@ def clean_phone_number(number)
   'badnum'
 end
 
+def log_time(registration, count)
+  to_register = DateTime.strptime(registration, '%m/%d/%y %H:%M')
+  count[to_register.hour] += 1
+  count
+end
+
 puts 'EventManager initialized.'
 
 contents = CSV.open(
@@ -50,17 +56,22 @@ contents = CSV.open(
 
 template_letter = File.read('form_letter.erb')
 erb_template = ERB.new template_letter
+time_count = Array.new(23, 0)
 
 contents.each do |row|
   id = row[0]
   name = row[:first_name]
   zipcode = clean_zipcode(row[:zipcode])
   legislators = legislators_by_zipcode(zipcode)
-  
+
   phone_number = clean_phone_number(row[:homephone])
   File.open('output/phone_numbers.txt', 'a') { |file| file.puts("#{name} | #{phone_number}") }
 
+  time_count = log_time(row[:regdate], time_count)
+  
   form_letter = erb_template.result(binding)
 
-  save_thank_you_letter(id,form_letter)
+  save_thank_you_letter(id, form_letter)
 end
+
+puts "The most active time for signing up was between #{time_count.index(time_count.max)}:00 and #{time_count.index(time_count.max) + 1}:00"
