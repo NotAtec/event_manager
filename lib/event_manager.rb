@@ -3,7 +3,7 @@ require 'google/apis/civicinfo_v2'
 require 'erb'
 
 def clean_zipcode(zipcode)
-  zipcode.to_s.rjust(5,"0")[0..4]
+  zipcode.to_s.rjust(5, '0')[0..4]
 end
 
 def legislators_by_zipcode(zip)
@@ -21,7 +21,7 @@ def legislators_by_zipcode(zip)
   end
 end
 
-def save_thank_you_letter(id,form_letter)
+def save_thank_you_letter(id, form_letter)
   Dir.mkdir('output') unless Dir.exist?('output')
 
   filename = "output/thanks_#{id}.html"
@@ -29,6 +29,15 @@ def save_thank_you_letter(id,form_letter)
   File.open(filename, 'w') do |file|
     file.puts form_letter
   end
+end
+
+def clean_phone_number(number)
+  phone_number = number.delete('^0-9')
+  return phone_number if phone_number.length == 10
+
+  return phone_number[1..-1] if phone_number.length == 11 && phone_number[0].to_i == 1
+
+  'badnum'
 end
 
 puts 'EventManager initialized.'
@@ -47,6 +56,9 @@ contents.each do |row|
   name = row[:first_name]
   zipcode = clean_zipcode(row[:zipcode])
   legislators = legislators_by_zipcode(zipcode)
+  
+  phone_number = clean_phone_number(row[:homephone])
+  File.open('output/phone_numbers.txt', 'a') { |file| file.puts("#{name} | #{phone_number}") }
 
   form_letter = erb_template.result(binding)
 
