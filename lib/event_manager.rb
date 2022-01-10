@@ -46,6 +46,12 @@ def log_time(registration, count)
   count
 end
 
+def log_date(registration, count)
+  to_register = DateTime.strptime(registration, '%m/%d/%y %H:%M')
+  count[to_register.wday] += 1
+  count
+end
+
 puts 'EventManager initialized.'
 
 contents = CSV.open(
@@ -57,6 +63,7 @@ contents = CSV.open(
 template_letter = File.read('form_letter.erb')
 erb_template = ERB.new template_letter
 time_count = Array.new(23, 0)
+date_count = Array.new(7, 0)
 
 contents.each do |row|
   id = row[0]
@@ -68,10 +75,15 @@ contents.each do |row|
   File.open('output/phone_numbers.txt', 'a') { |file| file.puts("#{name} | #{phone_number}") }
 
   time_count = log_time(row[:regdate], time_count)
-  
+
+  date_count = log_date(row[:regdate], date_count)
   form_letter = erb_template.result(binding)
 
   save_thank_you_letter(id, form_letter)
 end
 
+days = %w[Sunday Monday Tuesday Wednesday Thursday Friday Saturday]
+active_day = days[date_count.index(date_count.max)]
+
 puts "The most active time for signing up was between #{time_count.index(time_count.max)}:00 and #{time_count.index(time_count.max) + 1}:00"
+puts "The most active day for signing up was: #{active_day}"
